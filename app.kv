@@ -1,0 +1,126 @@
+<App@Screen>: 
+    MDNavigationLayout:
+        MDScreenManager:
+            MDScreen:
+                BoxLayout:
+                    orientation: 'vertical'
+                    MDTopAppBar:
+                        title: 'YT Downloader'
+                        left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+                    Downloader:
+        
+        MDNavigationDrawer:
+            id: nav_drawer
+            radius: (0, 16, 16, 0)
+
+            MDNavigationDrawerMenu:
+                MDNavigationDrawerHeader:
+                    title: "YT Downloader"
+                    title_color: "#4a4939"
+                    source: "logo.png"
+                    spacing: "4dp"
+                    padding: "1dp", 0, 0, "56dp"
+
+                MDNavigationDrawerDivider:
+
+                MDNavigationDrawerItem:
+                    icon: "invert-colors"
+                    text: "Inverter cores"
+                    on_release: app.changeColorTheme()
+
+                    
+
+<Downloader>:
+    MDIconButton:
+        pos_hint: {'center_x': .5, 'center_y': .90}
+        icon: 'download'
+        theme_icon_color: "Custom"
+        icon_color: 'red'
+        icon_size: '75sp' 
+ 
+    MDLabel:
+        text: 'DIGITE A URL DO VIDEO DO YOUTUBE'
+        pos_hint: {'center_y': .75}
+        halign: 'center'
+
+    MDTextField:
+        id: url_field
+        hint_text: 'URL'
+        helper_text: 'https://URL'
+        helper_text_mode: 'persistent'
+        pos_hint: {'center_x': .5, 'center_y': .65}
+        size_hint_x: .8
+        mode: "rectangle"
+        line_color_focus: 'purple'
+
+    MDRaisedButton:
+        text: 'MP3'
+        size_hint_x: .4
+        size_hint_y: .12
+        pos_hint: {'center_x': .25, 'center_y': .5}
+        on_release: root.downloadMP3()
+
+    MDRaisedButton:
+        text: 'MP4'
+        size_hint_x: .4
+        size_hint_y: .12
+        pos_hint: {'center_x': .75, 'center_y': .5}
+        on_release: root.downloadMP4()
+    
+    MDLabel:
+        id: label_caminho
+        text: ''
+        pos_hint: {'center_y': .35}
+        halign: 'center'
+    
+    MDRoundFlatIconButton:
+        text: 'Escolher pasta'
+        pos_hint: {'center_x': .5, 'center_y': .25}
+        icon: 'folder'
+        on_release: root.file_manager_open()
+
+<CardDownloadCompleted>:     
+    id: card
+    orientation: 'vertical'
+    size_hint: .6, .3
+    pos_hint: {'center_x': .5, 'center_y': .5}
+
+    MDBoxLayout:
+        size_hint_y: .2
+        padding: [25, 0, 25, 0]
+        md_bg_color: app.theme_cls.accent_color   
+
+        MDIconButton:
+            theme_text_color: 'Custom'
+            icon: 'close'
+            text_color: 1, 1, 1, 1
+            on_release: root.close()
+
+        MDLabel:
+            text: 'Download Realizado!'
+            theme_text_color: 'Custom'
+            text_color: 1, 1, 1, 1
+
+<CardDownloadFailed>:     
+    id: card
+    orientation: 'vertical'
+    size_hint: .6, .3
+    pos_hint: {'center_x': .5, 'center_y': .5}
+
+    MDBoxLayout:
+        size_hint_y: .2
+        padding: [25, 0, 25, 0]
+        md_bg_color: app.theme_cls.accent_color   
+
+        MDIconButton:
+            theme_text_color: 'Custom'
+            icon: 'close'
+            text_color: 1, 1, 1, 1
+            on_release: root.close()
+
+        MDLabel:
+            text: 'URL incorreta! Digite novamente...'
+            theme_text_color: 'Custom'
+            text_color: 1, 1, 1, 1
+
+App
