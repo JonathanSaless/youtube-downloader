@@ -4,6 +4,21 @@ from kivymd.uix.floatlayout import FloatLayout
 from kivymd.uix.textfield import MDTextField
 from kivy.lang import Builder
 from pytube import YouTube
+from kivy.utils import platform     #VERIFICA PLATAFORMA
+
+#IMPORT ABAIXO SERVE PARA QUE SEJA POSSÍVEL BAIXAR OS VÍDEO HTTPS
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
+#SOLICITAR PERMISSÃO DE MEMÓRIA NO ANDROID
+if platform == "android":
+     from android.permissions import request_permissions, Permission
+     request_permissions([Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE])
+
+#import certifi
+#import os
+
+#os.environ['SSL_CERT_FILE'] = certifi.where()
 
 KV = '''
 Screen: 
@@ -56,13 +71,6 @@ Screen:
         icon: 'invert-colors'
         icon_size: '75sp'
         on_release: app.changeColorTheme()
-
-    MDRaisedButton:
-        text: 'BOTÃO TESTE'
-        size_hint_x: .4
-        size_hint_y: .12
-        pos_hint: {'center_x': .5, 'center_y': .1}
-        on_release: root.open_dialog()
 
 <CardDownloadCompleted>:     
     id: card
@@ -119,10 +127,10 @@ class Downloader(FloatLayout):
 
     def downloadMP3(self):
         try:
-            print('download mp3')
-            audio = YouTube(self.get_url())        
+            audio = YouTube(self.get_url())
+            print("Baixando mp3 de "+ audio.title)    
             audio.streams.filter(only_audio=True).first().download(
-                output_path ="",
+                output_path ="/storage/emulated/0/Download/YT_Downloader_AUDIOS",
                 filename=audio.title + ".mp3"
             )
             self.open_dialog_completed()
@@ -133,14 +141,13 @@ class Downloader(FloatLayout):
 
     def downloadMP4(self):
         try:
-            print('download mp4')
             video = YouTube(self.get_url()) 
+            print("Baixando mp4 de "+ video.title)
             video.streams.get_highest_resolution().download(
-                output_path =""
+                output_path ="/storage/emulated/0/Download/YT_Downloader_VIDEOS"
             )
             self.open_dialog_completed()
-
-        except:
+        except: 
             print('URL inválida! Tente novamente')
             self.open_dialog_failed()
 
@@ -169,5 +176,5 @@ class App(MDApp):
             self.theme_cls.theme_style = 'Dark'
         else:
             self.theme_cls.theme_style = 'Light'
-
-App().run()
+if __name__ == '__main__':
+    App().run()
