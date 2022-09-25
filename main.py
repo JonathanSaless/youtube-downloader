@@ -3,11 +3,12 @@ import os
 from kivymd.app import MDApp
 from kivy.core.window import Window
 
-from kivymd.uix.card import MDCard
 from kivymd.uix.floatlayout import FloatLayout
-from kivymd.uix.textfield import MDTextField
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.filemanager import MDFileManager
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.dialog import MDDialog
 from kivymd.toast import toast
 from kivy.lang import Builder
 from pytube import YouTube
@@ -16,7 +17,7 @@ from kivy.utils import platform             #VERIFICA PLATAFORMA
 #IMPORT ABAIXO SERVE PARA QUE SEJA POSSÍVEL BAIXAR OS VÍDEO HTTPS
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
-
+print(os.path.expanduser("~")) #mostra a pasta em que tá sendo rodado o código
 #SOLICITAR PERMISSÃO DE MEMÓRIA NO ANDROID
 if platform == "android":
      from android.permissions import request_permissions, Permission
@@ -42,32 +43,66 @@ class ContentNavigationDrawer(MDBoxLayout):
     pass
 
 class Downloader(FloatLayout):
+    dialog = None
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Window.bind(on_keyboard=self.events)
-        self.path = "/"
+        if platform != "android":
+            self.path = os.path.expanduser("~")         #home/Jonathan/
+        else: 
+            self.path = primary_ext_storage             #storage/...
+
         self.manager_open = False
         self.file_manager = MDFileManager(
             exit_manager=self.exit_manager, 
             select_path=self.select_path
         )
-
-    def open_dialog_completed(self):
-        self.add_widget(CardDownloadCompleted())
     
-    def open_dialog_failed(self):
-        self.add_widget(CardDownloadFailed())
+    def dialog_completed(self):
+        self.dialog = MDDialog(
+            text="Download realizado!",
+            buttons=[
+                MDFlatButton(
+                    text="Voltar",
+                    on_release=self.close_dialog
+                ),
+                MDRaisedButton(
+                    text="Ok",
+                    on_release=self.close_dialog
+                ),
+            ],
+        )
+        self.dialog.open()
 
+    def dialog_failed(self):
+        self.dialog = MDDialog(
+            text="Não foi possível realizar o download!",
+            buttons=[
+                MDFlatButton(
+                    text="Cancelar",
+                    on_release=self.close_dialog
+                ),
+                MDRaisedButton(
+                    text="Tentar novamente",
+                    on_release=self.close_dialog
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    def close_dialog(self, obj):
+        self.dialog.dismiss()
+    
     def downloadMP3(self):
-        try:               
+        try:   
             audio = YouTube(self.get_url())
-            print("Baixando mp3 de "+ audio.title)    
+            print("Baixando mp3 de "+ audio.title)  
             audio.streams.filter(only_audio=True).first().download(
                 output_path =self.path,
-                filename=audio.title + ".mp3"
+                filename=audio.title + ".mp3",
             )
-            print("Audio salvo em", self.path)
-            self.open_dialog_completed()
+            self.ids.label_caminho.text = "Salvo em " + self.path
+            self.dialog_completed()
             
         except:
             print(self.ids.label_caminho.text)
@@ -75,7 +110,7 @@ class Downloader(FloatLayout):
             print(self.ids.label_caminho.text)
             print(self.path)
             print('URL inválida! Tente novamente')
-            self.open_dialog_failed()
+            self.dialog_failed()
 
     def downloadMP4(self):
         try:
@@ -84,28 +119,31 @@ class Downloader(FloatLayout):
             video.streams.get_highest_resolution().download(
                 output_path = self.path
             )
-            print("Video salvo em", self.path)
-            self.open_dialog_completed()
-        except: 
+            self.ids.label_caminho.text = "Salvo em " + self.path
+            self.dialog_completed()
+
+        except:
             print('URL inválida! Tente novamente')
-            self.open_dialog_failed()
+            self.dialog_failed()
+
 
     def get_url(self):
         print(self.ids.url_field.text)      #caminho do text field, neste caso o caminho é Downloader(self)>ids>id(url_fields), se estivesse no app, provavelmente o caminho deveria ser App(self)>Downloader(root)>ids>id(url_fields)
-        
         return self.ids.url_field.text
 
     def file_manager_open(self):
-        #self.file_manager.show(os.path.expanduser("~"))        #PC
-        self.file_manager.show(primary_ext_storage)             #android
+        if platform != "android":                       #PC
+            self.file_manager.show(os.path.expanduser("~"))  
+        else:                                           #mobile
+            self.file_manager.show(primary_ext_storage)
+
         self.manager_open = True
 
     def select_path(self, path: str):
         self.path = path
         self.exit_manager()
         toast(self.path)
-        print(self.path)
-        self.ids.label_caminho.text = "Arquivo será salvo em " + self.path      #Altera texto de Label informando onde será salvo o arquivo
+        self.ids.label_caminho.text = "Diretório " + self.path      #Altera texto de Label informando onde será salvo o arquivo
 
     def exit_manager(self, *args):
         self.manager_open = False
@@ -117,20 +155,13 @@ class Downloader(FloatLayout):
                 self.file_manager.back()
         return True
 
-class CardDownloadCompleted(MDCard):
-    def close(self):
-        self.parent.remove_widget(self)
-
-class CardDownloadFailed(MDCard):
-    def close(self):
-        self.parent.remove_widget(self)
-
 class App(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Window.bind(on_keyboard=self.events)
 
     def build(self):
+        self.icon = "logo.png"
         self.theme_cls.primary_palette = 'Red'
         self.theme_cls.accent_palette = 'Purple'
         self.theme_cls.theme_style = 'Light'
