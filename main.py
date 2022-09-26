@@ -1,180 +1,178 @@
+import os
+
 from kivymd.app import MDApp
-from kivymd.uix.card import MDCard
+from kivy.core.window import Window
+
 from kivymd.uix.floatlayout import FloatLayout
-from kivymd.uix.textfield import MDTextField
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.filemanager import MDFileManager
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.dialog import MDDialog
+from kivymd.toast import toast
 from kivy.lang import Builder
 from pytube import YouTube
-from kivy.utils import platform     #VERIFICA PLATAFORMA
+from kivy.utils import platform             #VERIFICA PLATAFORMA
 
 #IMPORT ABAIXO SERVE PARA QUE SEJA POSSÍVEL BAIXAR OS VÍDEO HTTPS
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
-
+print(os.path.expanduser("~")) #mostra a pasta em que tá sendo rodado o código
 #SOLICITAR PERMISSÃO DE MEMÓRIA NO ANDROID
 if platform == "android":
      from android.permissions import request_permissions, Permission
+     from android.storage import primary_external_storage_path
+     primary_ext_storage = primary_external_storage_path()
      request_permissions([Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE])
+
+elif platform == "linux":
+    print("Olá, estou usandoz linux!")
+elif platform == "windows":
+    print("Olá, estou usando windows!")
+elif platform == "macOS":
+    print("Olá, estou usando macOS!")
+else:
+    print("Não foi possível reconhecer seu sistema operacional!")
 
 #import certifi
 #import os
 
 #os.environ['SSL_CERT_FILE'] = certifi.where()
 
-KV = '''
-Screen: 
-    BoxLayout:
-        orientation: 'vertical'
-        MDTopAppBar:
-            title: 'YT Downloader'
-            #left_action_items: [["menu", lambda x: x]]
-        Downloader:
-
-<Downloader>:
-    MDIconButton:
-        pos_hint: {'center_x': .5, 'center_y': .90}
-        icon: 'download'
-        theme_icon_color: "Custom"
-        icon_color: 'red'
-        icon_size: '75sp' 
-
-    MDLabel:
-        text: 'DIGITE A URL DO VIDEO DO YOUTUBE'
-        pos_hint: {'center_y': .75}
-        halign: 'center'
-
-    MDTextField:
-        id: url_field
-        hint_text: 'URL'
-        helper_text: 'https://URL'
-        helper_text_mode: 'persistent'
-        pos_hint: {'center_x': .5, 'center_y': .65}
-        size_hint_x: .8
-        mode: "rectangle"
-        line_color_focus: 'purple'
-
-    MDRaisedButton:
-        text: 'MP3'
-        size_hint_x: .4
-        size_hint_y: .12
-        pos_hint: {'center_x': .25, 'center_y': .5}
-        on_release: root.downloadMP3()
-
-    MDRaisedButton:
-        text: 'MP4'
-        size_hint_x: .4
-        size_hint_y: .12
-        pos_hint: {'center_x': .75, 'center_y': .5}
-        on_release: root.downloadMP4()
-
-    MDIconButton:
-        pos_hint: {'center_x': .5, 'center_y': .25}
-        icon: 'invert-colors'
-        icon_size: '75sp'
-        on_release: app.changeColorTheme()
-
-<CardDownloadCompleted>:     
-    id: card
-    orientation: 'vertical'
-    size_hint: .6, .3
-    pos_hint: {'center_x': .5, 'center_y': .5}
-
-    MDBoxLayout:
-        size_hint_y: .2
-        padding: [25, 0, 25, 0]
-        md_bg_color: app.theme_cls.accent_color   
-
-        MDIconButton:
-            theme_text_color: 'Custom'
-            icon: 'close'
-            text_color: 1, 1, 1, 1
-            on_release: root.close()
-
-        MDLabel:
-            text: 'Download Realizado!'
-            theme_text_color: 'Custom'
-            text_color: 1, 1, 1, 1
-
-<CardDownloadFailed>:     
-    id: card
-    orientation: 'vertical'
-    size_hint: .6, .3
-    pos_hint: {'center_x': .5, 'center_y': .5}
-
-    MDBoxLayout:
-        size_hint_y: .2
-        padding: [25, 0, 25, 0]
-        md_bg_color: app.theme_cls.accent_color   
-
-        MDIconButton:
-            theme_text_color: 'Custom'
-            icon: 'close'
-            text_color: 1, 1, 1, 1
-            on_release: root.close()
-
-        MDLabel:
-            text: 'URL incorreta! Digite novamente...'
-            theme_text_color: 'Custom'
-            text_color: 1, 1, 1, 1
-
-'''
+class ContentNavigationDrawer(MDBoxLayout):
+    pass
 
 class Downloader(FloatLayout):
-    def open_dialog_completed(self):
-        self.add_widget(CardDownloadCompleted())
-    
-    def open_dialog_failed(self):
-        self.add_widget(CardDownloadFailed())
+    dialog = None
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Window.bind(on_keyboard=self.events)
+        if platform != "android":
+            self.path = os.path.expanduser("~")         #home/Jonathan/
+        else: 
+            self.path = primary_ext_storage             #storage/...
 
+        self.manager_open = False
+        self.file_manager = MDFileManager(
+            exit_manager=self.exit_manager, 
+            select_path=self.select_path
+        )
+    
+    def dialog_completed(self):
+        self.dialog = MDDialog(
+            text="Download realizado!",
+            buttons=[
+                MDFlatButton(
+                    text="Voltar",
+                    on_release=self.close_dialog
+                ),
+                MDRaisedButton(
+                    text="Ok",
+                    on_release=self.close_dialog
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    def dialog_failed(self):
+        self.dialog = MDDialog(
+            text="Não foi possível realizar o download!",
+            buttons=[
+                MDFlatButton(
+                    text="Cancelar",
+                    on_release=self.close_dialog
+                ),
+                MDRaisedButton(
+                    text="Tentar novamente",
+                    on_release=self.close_dialog
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    def close_dialog(self, obj):
+        self.dialog.dismiss()
+    
     def downloadMP3(self):
-        try:
+        try:   
             audio = YouTube(self.get_url())
-            print("Baixando mp3 de "+ audio.title)    
+            print("Baixando mp3 de "+ audio.title)  
             audio.streams.filter(only_audio=True).first().download(
-                output_path ="/storage/emulated/0/Download/YT_Downloader_AUDIOS",
-                filename=audio.title + ".mp3"
+                output_path =self.path,
+                filename=audio.title + ".mp3",
             )
-            self.open_dialog_completed()
+            self.ids.label_caminho.text = "Salvo em " + self.path
+            self.dialog_completed()
             
         except:
+            print(self.ids.label_caminho.text)
+            self.ids.label_caminho.text = "Arquivo será salvo em " + self.path
+            print(self.ids.label_caminho.text)
+            print(self.path)
             print('URL inválida! Tente novamente')
-            self.open_dialog_failed()
+            self.dialog_failed()
 
     def downloadMP4(self):
         try:
             video = YouTube(self.get_url()) 
             print("Baixando mp4 de "+ video.title)
             video.streams.get_highest_resolution().download(
-                output_path ="/storage/emulated/0/Download/YT_Downloader_VIDEOS"
+                output_path = self.path
             )
-            self.open_dialog_completed()
-        except: 
+            self.ids.label_caminho.text = "Salvo em " + self.path
+            self.dialog_completed()
+
+        except:
             print('URL inválida! Tente novamente')
-            self.open_dialog_failed()
+            self.dialog_failed()
+
 
     def get_url(self):
         print(self.ids.url_field.text)      #caminho do text field, neste caso o caminho é Downloader(self)>ids>id(url_fields), se estivesse no app, provavelmente o caminho deveria ser App(self)>Downloader(root)>ids>id(url_fields)
         return self.ids.url_field.text
 
-class CardDownloadCompleted(MDCard):
-    def close(self):
-        self.parent.remove_widget(self)
+    def file_manager_open(self):
+        if platform != "android":                       #PC
+            self.file_manager.show(os.path.expanduser("~"))  
+        else:                                           #mobile
+            self.file_manager.show(primary_ext_storage)
 
-class CardDownloadFailed(MDCard):
-    def close(self):
-        self.parent.remove_widget(self)
+        self.manager_open = True
+
+    def select_path(self, path: str):
+        self.path = path
+        self.exit_manager()
+        toast(self.path)
+        self.ids.label_caminho.text = "Diretório " + self.path      #Altera texto de Label informando onde será salvo o arquivo
+
+    def exit_manager(self, *args):
+        self.manager_open = False
+        self.file_manager.close()
+
+    def events(self, instance, keyboard, keycode, text, modifiers):
+        if keyboard in (1001, 27):
+            if self.manager_open:
+                self.file_manager.back()
+        return True
 
 class App(MDApp):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Window.bind(on_keyboard=self.events)
 
     def build(self):
+        self.icon = "logo.png"
         self.theme_cls.primary_palette = 'Red'
         self.theme_cls.accent_palette = 'Purple'
         self.theme_cls.theme_style = 'Light'
-        return Builder.load_string(KV)
+        #return Builder.load_string(KV)
            
     def changeColorTheme(self):
         if(self.theme_cls.theme_style == 'Light'):
             self.theme_cls.theme_style = 'Dark'
+
         else:
             self.theme_cls.theme_style = 'Light'
+
 if __name__ == '__main__':
     App().run()
