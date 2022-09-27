@@ -21,3 +21,4 @@ Link colab:
 ```
 https://colab.research.google.com/drive/1SfJI3M4Aq4_uLUGQ3XAZMxG1hmc8V2rZ?usp=sharing
 ```
+# Requirements
