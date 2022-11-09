@@ -1,7 +1,7 @@
 # YouTube Downloader
 App desenvolvido para venda na disciplina de Empreendedorismo em Informática.
 
-# Pacotes utilizados
+# Pacotes utilizados (criar o env para rodar o programa)
 - Kivy 2.1.0
 - Kivymd 1.0.2
 - pytube 12.1.0
