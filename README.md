@@ -1,5 +1,5 @@
 # YouTube Downloader
-App desenvolvido para venda na disciplina de Empreendedorismo em Informática.
+App desenvolvido no curso de python e kivymd na disciplina de Empreendedorismo em Informática.
 
 # Pacotes utilizados (criar o env para rodar o programa)
 - Kivy 2.1.0
